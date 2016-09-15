@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<style>
+		*{
+			padding:0;
+			margin:0;
+		}
+		canvas{
+			border:1px solid #666;
+			margin:15px auto 0;
+			display:block;
+		}
+	</style>
+</head>
+<body>
+	<canvas id="mycanvas" width="300" height="150"> </canvas>
+
+	<script>
+		var c = document.getElementById('mycanvas'),
+			ctx = c.getContext("2d"),
+			time = 600,
+			direction = 2,
+			size = 15,
+			w = 3,
+			map = [],
+			x = y = size,
+			x1 = 0,
+			y1 = 0;
+		var interval = window.setInterval(move_obj, time);
+		function move_obj(){
+			switch(direction){
+				case 0:x = x - size;break;
+				case 1:y = y - size;break;
+				case 2:x = x + size;break;
+				case 3:y = y + size;break;
+			}
+			if(map.length>w){
+				var cl = map.shift();
+				ctx.clearRect(cl['x'], cl['y'], size, size)
+			}
+			if(x == x1 && y == y1){
+				put_food();
+				w++;
+			}
+
+			if(x == c.clientWidth || y == c.clientHeight || x < 0 || y < 0){
+				//alert('撞墙了');
+				console.log('撞墙了');
+				clearInterval(interval);
+				//window.location.reload();
+			}
+			ctx.fillStyle = '#000';
+			for ( var i in map){
+				if(x==map[i].x && y==map[i].y){
+					console.log('撞到自己了！');
+					clearInterval(interval);
+					ctx.fillStyle = 'red';
+					//window.location.reload();
+				}
+			}
+			map.push({'x':x,'y':y});
+			ctx.fillRect(x, y, size, size);
+
+
+
+
+
+			auto();
+		}
+
+		document.onkeydown = function(e){
+			var code = e.keyCode - 37;
+			if(code == 0 && direction == 2){
+				code = 2
+			}
+			if(code == 2 && direction == 0){
+				code = 0
+			}
+			if(code == 1 && direction == 3){
+				code = 3
+			}
+			if(code == 3 && direction == 1){
+				code = 1
+			}
+			switch(code){
+				case 0:direction = 0;break; // 左
+				case 1:direction = 1;break; // 上
+				case 2:direction = 2;break; // 右
+				case 3:direction = 3;break; // 下
+			}
+		}
+		function put_food(){
+			x1 = c.clientWidth > 0 ?  Math.floor(0 + Math.random()*(c.clientWidth - 0)) : 0 ;
+			y1 = c.clientHeight > 0 ?  Math.floor(0 + Math.random()*(c.clientHeight - 0)) : 0 ;
+			if(x1 == 0){x1 = 0;}else{x1 = x1 - x1 % size;}
+			if(y1 == 0){y1 = 0;}else{y1 = y1 - y1 % size;}
+			// console.log(x1+'---'+y1)
+			again:
+			for(var i in map){
+				if(x1 == map[i].x && y1 == map[i].y){
+					 //console.log(x1+','+y1)
+					x1 = c.clientWidth > 0 ?  Math.floor(0 + Math.random()*(c.clientWidth - 0)) : 0 ;
+					y1 = c.clientHeight > 0 ?  Math.floor(0 + Math.random()*(c.clientHeight - 0)) : 0 ;
+					if(x1 == 0){x1 = 0;}else{x1 = x1 - x1 % size;}
+					if(y1 == 0){y1 = 0;}else{y1 = y1 - y1 % size;}
+					if(x1 == map[i].x && y1 == map[i].y){
+						console.log('food lose...   put food again')
+						continue again;
+					}
+				}
+			}
+			ctx.fillStyle = 'red';
+			ctx.fillRect(x1, y1, size, size);
+		}
+		put_food();
+
+		function auto(){
+			var arr = [];
+			var armin = 0; // arr 最小
+			var around = [
+				{'x':x-size,'y':y,'dir':0}, //left
+				{'x':x+size,'y':y,'dir':2}, //right
+				{'x':x,'y':y-size,'dir':1}, //top
+				{'x':x,'y':y+size,'dir':3}  //bottom
+			]
+			var cavArr = []; // 背景 方格数组
+			var qcCavArr = []; // 去重背景方格数组
+			var qc = []; // 此为around去掉重复的数组;
+
+			// around 去掉重复
+			for( var i in around){ 
+				var bool = true;
+				var all = around[i];
+				for(var r in map){  
+					if(all.x === map[r].x && all.y === map[r].y){ 
+						//console.log( '{'+map[r].x+','+map[r].y+'}') 
+						bool = false;
+						break;
+					}
+				}
+				if(bool){
+					qc.push(all);
+				}
+			}
+
+			// 绘制背景 方格
+			for ( var x = 0 ; x <= c.clientWidth ; x = x + size ){  
+				for( var y = 0 ; y <= c.clientHeight ; y = y + size ){
+					if( x <= c.clientWidth && y <= c.clientHeight ){
+						cavArr.push({'x':x,'y':y})
+					}
+				}
+			}
+
+			// 背景数组去除身体数组
+			for( var i in cavArr ){
+				var bol = true;
+				var all = cavArr[i];
+				for(var r in map){  
+					if(all.x === map[r].x && all.y === map[r].y){ 
+						//console.log( '{'+all.x+','+all.y+'}') 
+						bool = false;
+						break;
+					}
+				}
+				if(bool){
+					qcCavArr.push(all);
+				}
+			}
+
+			for(var i in qcCavArr){
+				var all = qcCavArr[i];
+				for( var d in qc){
+					if( qc[d].x === all.x && qc[d].y === all.y){
+						console.log(111)
+						var a = (x1-qc[d].x)/size;
+						var b = (y1-qc[d].y)/size;
+						
+						if(a < 0){
+							a = -a
+						}
+						if(b < 0){
+							b = -b
+						}
+						arr.push(a+b);
+						armin = Math.min.apply(null, arr);
+						for(var m in arr){
+							if( armin == arr[m]){
+								direction = qc[m].dir; //最短方向
+							}
+
+						}
+					}
+				}
+				//console.log('{'+cavArr[i].x+','+ cavArr[i].y+'}')
+			}
+				/*
+					// 此段取最短路径
+					
+					var a = (x1-around[i].x)/size;
+					var b = (y1-around[i].y)/size;
+					//ctx.strokeRect(around[i].x, around[i].y, size, size);
+					if(a < 0){
+						a = -a
+					}
+					if(b < 0){
+						b = -b
+					}
+					arr.push(a+b);
+					armin = Math.min.apply(null, arr);
+					for(var m in arr){
+						if( armin == arr[m]){
+							direction = around[m].dir; //最短方向
+						}
+
+					}
+				*/
+
+			
+
+
+
+			for( var i in map){
+				if( x == map[i].x-size && y == map[i].y){
+					//console.log('1')
+				}else if( x == map[i].x+size && y == map[i].y){
+					//console.log('2')
+				}else if( y == map[i].y-size && x == map[i].x){
+					//console.log('3')
+				}else if( y == map[i].y+size && x == map[i].x){
+					//console.log('4')
+				}
+			}
+			/*
+			if( y < y1 && direction != 1){
+				direction = 3;
+				//console.log('1-down')
+				
+			}else if( y == y1){
+				if( x < x1 && direction != 0 ){
+					direction = 2;
+					//console.log('2-right')
+					
+				} else if( x > x1 && direction != 2 ){
+					direction = 0;
+					//console.log('3-left')
+					
+				}
+			}else if( y > y1 && direction != 3 ){
+				direction = 1;
+				//console.log('4-up')
+			}
+			*/
+
+		}
+
+
+
+	</script>
+</body>
+</html>
